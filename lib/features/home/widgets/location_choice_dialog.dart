@@ -109,8 +109,10 @@ class _LocationChoiceDialogState extends State<LocationChoiceDialog> {
       }
 
       final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 10),
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 10),
+        ),
       );
 
       final placemarks = await placemarkFromCoordinates(

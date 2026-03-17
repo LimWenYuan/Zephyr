@@ -117,7 +117,7 @@ class TrendsHistoryService {
     final Map<String, List<double>> grouped = {};
 
     for (final row in response) {
-      final map = row as Map<String, dynamic>;
+      final map = row;
 
       final createdAtRaw = map['created_at'];
       final apiValueRaw = map['api_value'];

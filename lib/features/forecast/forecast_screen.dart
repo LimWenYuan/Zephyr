@@ -162,10 +162,11 @@ class _ForecastScreenState extends State<ForecastScreen> {
     } catch (e) {
       debugPrint('Failed to load forecast/history: $e');
     } finally {
-      if (!mounted) return;
-      setState(() {
-        _isLoadingHistory = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoadingHistory = false;
+        });
+      }
     }
   }
 
