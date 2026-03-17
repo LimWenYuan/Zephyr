@@ -30,9 +30,8 @@ class ForecastHistoryService {
     return _stationNameToId[stationName] ?? 1;
   }
 
-  Future<List<Map<String, dynamic>>> fetchHistory({
+  Future<List<Map<String, dynamic>>> fetchSevenDayForecast({
     required String stationName,
-    int limit = 60,
   }) async {
     final stationId = _resolveStationId(stationName);
 
@@ -50,11 +49,11 @@ class ForecastHistoryService {
           reading_time,
           air_temperature,
           air_humidity,
-          created_at
+          created_at,
+          forecasting_date
         ''')
         .eq('station_id', stationId)
-        .order('created_at', ascending: false)
-        .limit(limit);
+        .order('forecasting_date', ascending: true);
 
     return List<Map<String, dynamic>>.from(response);
   }

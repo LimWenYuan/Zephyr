@@ -56,10 +56,8 @@ class _ForecastScreenState extends State<ForecastScreen> {
       HourlyForecastPoint(hourLabel: '23:00', aqi: 58),
     ],
 
-    // Leave 7-day data blank for now, will connect to DB later
     dailyItems: [],
 
-    // Recommendation cards based on the mock 24-hour forecast above
     bestTimeRange: '02:00 - 06:00',
     bestTimeDescription:
     'Ideal for walks, exercise, and outdoor activities. Air quality is at its best during this period.',
@@ -95,59 +93,63 @@ class _ForecastScreenState extends State<ForecastScreen> {
         (ModalRoute.of(context)?.settings.arguments as String?) ??
             'Kuala Lumpur City Centre';
 
-    _loadHistory(location);
+    _loadSevenDayForecast(location);
   }
 
-  Future<void> _loadHistory(String location) async {
+  Future<void> _loadSevenDayForecast(String location) async {
     setState(() {
       _isLoadingHistory = true;
     });
 
     try {
-      final rows = await _historyService.fetchHistory(
+      final rows = await _historyService.fetchSevenDayForecast(
         stationName: location,
-        limit: 120,
       );
 
-      final grouped = <String, List<Map<String, dynamic>>>{};
+      final today = DateTime.now();
+      final todayDateOnly = DateTime(today.year, today.month, today.day);
+
+      final Map<String, Map<String, dynamic>> uniqueByForecastDate = {};
 
       for (final row in rows) {
-        final rawCreatedAt = row['created_at']?.toString();
-        if (rawCreatedAt == null || rawCreatedAt.isEmpty) continue;
+        final rawForecastingDate = row['forecasting_date']?.toString();
+        if (rawForecastingDate == null || rawForecastingDate.isEmpty) continue;
 
-        final dt = DateTime.tryParse(rawCreatedAt);
+        final dt = DateTime.tryParse(rawForecastingDate);
         if (dt == null) continue;
 
         final localDt = dt.toLocal();
-        final dateKey =
-            '${localDt.year.toString().padLeft(4, '0')}-'
-            '${localDt.month.toString().padLeft(2, '0')}-'
-            '${localDt.day.toString().padLeft(2, '0')}';
+        final dateOnly = DateTime(localDt.year, localDt.month, localDt.day);
 
-        grouped.putIfAbsent(dateKey, () => []).add(row);
+        if (dateOnly.isBefore(todayDateOnly)) continue;
+
+        final dateKey =
+            '${dateOnly.year.toString().padLeft(4, '0')}-'
+            '${dateOnly.month.toString().padLeft(2, '0')}-'
+            '${dateOnly.day.toString().padLeft(2, '0')}';
+
+        uniqueByForecastDate[dateKey] ??= row;
       }
 
-      final sortedKeys = grouped.keys.toList()..sort();
-      final latest7Keys = sortedKeys.reversed.take(7).toList().reversed.toList();
+      final sortedKeys = uniqueByForecastDate.keys.toList()..sort();
+      final next7Keys = sortedKeys.take(7).toList();
 
-      final mappedDailyItems = latest7Keys.map((dateKey) {
-        final items = grouped[dateKey] ?? [];
-
-        final avgAqi = _averageNum(items.map((e) => e['api_value']).toList());
-        final avgTemp =
-        _averageNum(items.map((e) => e['air_temperature']).toList());
-        final avgHumidity =
-        _averageNum(items.map((e) => e['air_humidity']).toList());
+      final mappedDailyItems = next7Keys.map((dateKey) {
+        final row = uniqueByForecastDate[dateKey]!;
 
         final parsedDate = DateTime.parse('$dateKey 00:00:00');
+
+        final aqi = _toInt(row['api_value']);
+        final temp = _toDoubleNullable(row['air_temperature']);
+        final humidity = _toDoubleNullable(row['air_humidity']);
 
         return DailyForecastItem(
           weekday: _weekdayLabel(parsedDate),
           dateLabel: _dateLabel(parsedDate),
-          aqi: avgAqi?.round(),
-          category: _aqiCategory(avgAqi?.round()),
-          temperature: avgTemp == null ? '--' : '${avgTemp.round()}°C',
-          humidity: avgHumidity == null ? '--' : '${avgHumidity.round()}%',
+          aqi: aqi,
+          category: _aqiCategory(aqi),
+          temperature: temp == null ? '--' : '${temp.round()}°C',
+          humidity: humidity == null ? '--' : '${humidity.round()}%',
         );
       }).toList();
 
@@ -160,26 +162,26 @@ class _ForecastScreenState extends State<ForecastScreen> {
         }
       });
     } catch (e) {
-      debugPrint('Failed to load forecast/history: $e');
+      debugPrint('Failed to load 7-day forecast: $e');
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoadingHistory = false;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _isLoadingHistory = false;
+      });
     }
   }
 
-  double? _averageNum(List<dynamic> values) {
-    final nums = values
-        .map((e) => e is num ? e.toDouble() : double.tryParse('$e'))
-        .whereType<double>()
-        .toList();
+  int? _toInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is num) return value.round();
+    return int.tryParse(value.toString());
+  }
 
-    if (nums.isEmpty) return null;
-
-    final sum = nums.reduce((a, b) => a + b);
-    return sum / nums.length;
+  double? _toDoubleNullable(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString());
   }
 
   String _weekdayLabel(DateTime dt) {
