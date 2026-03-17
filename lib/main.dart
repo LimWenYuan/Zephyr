@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'features/home/home_screen.dart';
+import 'features/dashboard/dashboard_screen.dart';
+import 'features/forecast/forecast_screen.dart';
+import 'features/trend/trends_screen.dart';
+import 'features/health/health_screen.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -9,79 +15,35 @@ Future<void> main() async {
     anonKey: 'sb_publishable_7F-_lrJd6dU1OJyiPEbkyg_-GQXyahh',
   );
 
-  runApp(const MyApp());
+  runApp(const ZephyrApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class ZephyrApp extends StatelessWidget {
+  const ZephyrApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(home: HomePage());
-  }
-}
-
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
-
-  @override
-  State<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
-  final supabase = Supabase.instance.client;
-
-  List users = [];
-
-  @override
-  void initState() {
-    super.initState();
-    fetchUsers();
-  }
-
-  Future<void> fetchUsers() async {
-    final data = await supabase.from('elderly_user').select();
-
-    setState(() {
-      users = data;
-    });
-  }
-
-  Future<void> insertUser() async {
-    await supabase.from('elderly_user').insert({
-      'full_name': 'Test User',
-      'age': 70,
-      'gender': 'Male',
-      'phone_number': '0123456789',
-    });
-
-    fetchUsers();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Supabase Test')),
-      body: Column(
-        children: [
-          ElevatedButton(
-            onPressed: insertUser,
-            child: const Text("Insert User"),
-          ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: users.length,
-              itemBuilder: (context, index) {
-                final user = users[index];
-                return ListTile(
-                  title: Text(user['full_name'] ?? ''),
-                  subtitle: Text("Age: ${user['age']}"),
-                );
-              },
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Zephyr',
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const HomeScreen(),
+        '/forecast': (context) => const ForecastScreen(),
+        '/trends': (context) => const TrendsScreen(),
+        '/health': (context) => const HealthScreen(),
+      },
+      onGenerateRoute: (settings) {
+        if (settings.name == '/dashboard') {
+          final selectedLocation = settings.arguments as String?;
+          return MaterialPageRoute(
+            builder: (context) => DashboardScreen(
+              selectedLocation: selectedLocation,
             ),
-          ),
-        ],
-      ),
+          );
+        }
+        return null;
+      },
     );
   }
 }
