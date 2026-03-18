@@ -11,6 +11,7 @@ import 'widgets/forecast_line_chart_card.dart';
 import 'widgets/high_risk_alert_card.dart';
 import 'widgets/recommendation_cards_section.dart';
 import 'widgets/seven_day_bar_chart_card.dart';
+import '../../data/services/air_quality_service.dart';
 import '../../data/services/forecast_history_service.dart';
 
 class ForecastScreen extends StatefulWidget {
@@ -27,13 +28,12 @@ class ForecastScreen extends StatefulWidget {
 
 class _ForecastScreenState extends State<ForecastScreen> {
   final _historyService = ForecastHistoryService();
+  final _airQualityService = AirQualityService();
+
   bool _hasLoadedHistory = false;
   bool _isLoadingHistory = false;
 
   final ForecastViewData data = const ForecastViewData(
-    // Mock 24-hour AQI forecast just for UI demo
-    // Lowest period: 02:00 - 06:00
-    // Highest period: 16:00 - 20:00
     hourlyPoints: [
       HourlyForecastPoint(hourLabel: '00:00', aqi: 52),
       HourlyForecastPoint(hourLabel: '01:00', aqi: 48),
@@ -60,30 +60,26 @@ class _ForecastScreenState extends State<ForecastScreen> {
       HourlyForecastPoint(hourLabel: '22:00', aqi: 64),
       HourlyForecastPoint(hourLabel: '23:00', aqi: 58),
     ],
-
     dailyItems: [],
-
     bestTimeRange: '02:00 - 06:00',
     bestTimeDescription:
         'Ideal for walks, exercise, and outdoor activities. Air quality is at its best during this period.',
     bestTimeMeta: 'Avg AQI: 44',
-
     stayIndoorsRange: '16:00 - 20:00',
     stayIndoorsDescription:
         'Air quality is poorest during these hours. Consider staying indoors with air conditioning or purifiers.',
     stayIndoorsMeta: 'Avg AQI: 85',
-
     exerciseRange: '02:00 - 06:00',
     exerciseDescription:
         'Perfect conditions for jogging, cycling, or other aerobic activities.',
     exerciseMeta: '✓ All activities safe',
-
     showHighRiskAlert: false,
     highRiskText: null,
     selectedNavIndex: 1,
   );
 
   List<DailyForecastItem> _historyDailyItems = [];
+  List<HourlyForecastPoint> _hourlyForecastPoints = const [];
 
   int selectedDayIndex = 0;
 
@@ -100,6 +96,23 @@ class _ForecastScreenState extends State<ForecastScreen> {
         'Kuala Lumpur City Centre';
 
     _loadSevenDayForecast(location);
+    _loadEstimatedHourlyForecast(location);
+  }
+
+  Future<void> _loadEstimatedHourlyForecast(String location) async {
+    try {
+      final points = await _airQualityService.fetchEstimatedHourlyForecast(
+        location,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _hourlyForecastPoints = points;
+      });
+    } catch (e) {
+      debugPrint('Failed to load estimated hourly forecast: $e');
+    }
   }
 
   Future<void> _loadSevenDayForecast(String location) async {
@@ -238,6 +251,142 @@ class _ForecastScreenState extends State<ForecastScreen> {
     ];
   }
 
+  List<HourlyForecastPoint> get _displayHourlyPoints {
+    if (_hourlyForecastPoints.isNotEmpty) return _hourlyForecastPoints;
+    return data.hourlyPoints;
+  }
+
+  _ForecastWindow _lowestWindow(List<HourlyForecastPoint> points, int windowSize) {
+    if (points.isEmpty) {
+      return const _ForecastWindow(
+        startIndex: 0,
+        endIndex: 0,
+        average: 0,
+      );
+    }
+
+    if (points.length <= windowSize) {
+      final avg =
+          points.map((e) => e.aqi).reduce((a, b) => a + b) / points.length;
+      return _ForecastWindow(
+        startIndex: 0,
+        endIndex: points.length - 1,
+        average: avg,
+      );
+    }
+
+    double bestAverage = double.infinity;
+    int bestStart = 0;
+
+    for (int i = 0; i <= points.length - windowSize; i++) {
+      final slice = points.sublist(i, i + windowSize);
+      final avg = slice.map((e) => e.aqi).reduce((a, b) => a + b) / slice.length;
+
+      if (avg < bestAverage) {
+        bestAverage = avg;
+        bestStart = i;
+      }
+    }
+
+    return _ForecastWindow(
+      startIndex: bestStart,
+      endIndex: bestStart + windowSize - 1,
+      average: bestAverage,
+    );
+  }
+
+  _ForecastWindow _highestWindow(List<HourlyForecastPoint> points, int windowSize) {
+    if (points.isEmpty) {
+      return const _ForecastWindow(
+        startIndex: 0,
+        endIndex: 0,
+        average: 0,
+      );
+    }
+
+    if (points.length <= windowSize) {
+      final avg =
+          points.map((e) => e.aqi).reduce((a, b) => a + b) / points.length;
+      return _ForecastWindow(
+        startIndex: 0,
+        endIndex: points.length - 1,
+        average: avg,
+      );
+    }
+
+    double bestAverage = -1;
+    int bestStart = 0;
+
+    for (int i = 0; i <= points.length - windowSize; i++) {
+      final slice = points.sublist(i, i + windowSize);
+      final avg = slice.map((e) => e.aqi).reduce((a, b) => a + b) / slice.length;
+
+      if (avg > bestAverage) {
+        bestAverage = avg;
+        bestStart = i;
+      }
+    }
+
+    return _ForecastWindow(
+      startIndex: bestStart,
+      endIndex: bestStart + windowSize - 1,
+      average: bestAverage,
+    );
+  }
+
+  String _formatRange(List<HourlyForecastPoint> points, _ForecastWindow window) {
+    if (points.isEmpty) return '--';
+    final start = points[window.startIndex].hourLabel;
+    final end = points[window.endIndex].hourLabel;
+    return '$start - $end';
+  }
+
+  String _bestTimeDescription(double avg) {
+    if (avg <= 50) {
+      return 'Ideal for walks, exercise, and outdoor activities. Air quality is at its best during this period.';
+    }
+    if (avg <= 100) {
+      return 'Suitable for most outdoor activities. Conditions are relatively better during this period.';
+    }
+    if (avg <= 150) {
+      return 'Better than other parts of the day, but sensitive groups should still take some care outdoors.';
+    }
+    return 'This is the least polluted period of the day, but caution is still recommended outdoors.';
+  }
+
+  String _stayIndoorsDescription(double avg) {
+    if (avg <= 50) {
+      return 'Air quality remains generally good, but this is still the least favorable period compared to the rest of the day.';
+    }
+    if (avg <= 100) {
+      return 'Air quality is poorer during these hours. Consider reducing prolonged outdoor exposure.';
+    }
+    if (avg <= 150) {
+      return 'Air quality is unhealthy for sensitive groups during these hours. Consider staying indoors when possible.';
+    }
+    return 'Air quality is poorest during these hours. Consider staying indoors with air conditioning or purifiers.';
+  }
+
+  String _exerciseDescription(double avg) {
+    if (avg <= 50) {
+      return 'Perfect conditions for jogging, cycling, or other aerobic activities.';
+    }
+    if (avg <= 100) {
+      return 'Reasonably suitable for light to moderate outdoor exercise.';
+    }
+    if (avg <= 150) {
+      return 'Light outdoor exercise may be okay, but intense activity should be limited, especially for sensitive groups.';
+    }
+    return 'Indoor exercise is recommended during this period due to poorer air quality.';
+  }
+
+  String _exerciseMeta(double avg) {
+    if (avg <= 50) return '✓ All activities safe';
+    if (avg <= 100) return '✓ Light to moderate activity okay';
+    if (avg <= 150) return '△ Keep activity lighter';
+    return '⚠ Indoor exercise preferred';
+  }
+
   void _handleBottomNav(BuildContext context, int index, String location) {
     if (index == 0) {
       Navigator.pushReplacementNamed(
@@ -270,6 +419,23 @@ class _ForecastScreenState extends State<ForecastScreen> {
         'Kuala Lumpur City Centre';
 
     final selectedItem = _displayItems[selectedDayIndex];
+    final hourlyPoints = _displayHourlyPoints;
+
+    final bestWindow = _lowestWindow(hourlyPoints, 5);
+    final worstWindow = _highestWindow(hourlyPoints, 5);
+    final exerciseWindow = _lowestWindow(hourlyPoints, 5);
+
+    final bestTimeRange = _formatRange(hourlyPoints, bestWindow);
+    final stayIndoorsRange = _formatRange(hourlyPoints, worstWindow);
+    final exerciseRange = _formatRange(hourlyPoints, exerciseWindow);
+
+    final bestTimeMeta = 'Avg AQI: ${bestWindow.average.round()}';
+    final stayIndoorsMeta = 'Avg AQI: ${worstWindow.average.round()}';
+    final exerciseMeta = _exerciseMeta(exerciseWindow.average);
+
+    final bestTimeDescription = _bestTimeDescription(bestWindow.average);
+    final stayIndoorsDescription = _stayIndoorsDescription(worstWindow.average);
+    final exerciseDescription = _exerciseDescription(exerciseWindow.average);
 
     return Scaffold(
       body: Stack(
@@ -310,18 +476,17 @@ class _ForecastScreenState extends State<ForecastScreen> {
                                 text: data.highRiskText ??
                                     'High-risk forecast alert will appear here when AQI exceeds your threshold.',
                               ),
-                            ForecastLineChartCard(points: data.hourlyPoints),
+                            ForecastLineChartCard(points: hourlyPoints),
                             RecommendationCardsSection(
-                              bestTimeRange: data.bestTimeRange,
-                              bestTimeDescription: data.bestTimeDescription,
-                              bestTimeMeta: data.bestTimeMeta,
-                              stayIndoorsRange: data.stayIndoorsRange,
-                              stayIndoorsDescription:
-                                  data.stayIndoorsDescription,
-                              stayIndoorsMeta: data.stayIndoorsMeta,
-                              exerciseRange: data.exerciseRange,
-                              exerciseDescription: data.exerciseDescription,
-                              exerciseMeta: data.exerciseMeta,
+                              bestTimeRange: bestTimeRange,
+                              bestTimeDescription: bestTimeDescription,
+                              bestTimeMeta: bestTimeMeta,
+                              stayIndoorsRange: stayIndoorsRange,
+                              stayIndoorsDescription: stayIndoorsDescription,
+                              stayIndoorsMeta: stayIndoorsMeta,
+                              exerciseRange: exerciseRange,
+                              exerciseDescription: exerciseDescription,
+                              exerciseMeta: exerciseMeta,
                             ),
                             SevenDayBarChartCard(items: _displayItems),
                             DailyBreakdownGrid(
@@ -358,4 +523,16 @@ class _ForecastScreenState extends State<ForecastScreen> {
       ),
     );
   }
+}
+
+class _ForecastWindow {
+  final int startIndex;
+  final int endIndex;
+  final double average;
+
+  const _ForecastWindow({
+    required this.startIndex,
+    required this.endIndex,
+    required this.average,
+  });
 }

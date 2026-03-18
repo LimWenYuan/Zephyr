@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../../features/dashboard/models/dashboard_view_data.dart';
 import '../../features/dashboard/models/pollutant_item.dart';
+import '../../features/forecast/models/hourly_forecast_point.dart';
 
 class AirQualityLocation {
   final String name;
@@ -107,23 +109,8 @@ class AirQualityService {
       orElse: () => locations.first,
     );
 
-    final uri = Uri.parse(
-      'https://api.waqi.info/feed/${location.query}/?token=$_token',
-    );
+    final data = await _fetchWaqiData(location);
 
-    final response = await http.get(uri);
-
-    if (response.statusCode != 200) {
-      throw Exception('Failed to fetch WAQI data');
-    }
-
-    final jsonMap = jsonDecode(response.body) as Map<String, dynamic>;
-
-    if (jsonMap['status'] != 'ok') {
-      throw Exception('WAQI returned status: ${jsonMap['status']}');
-    }
-
-    final data = jsonMap['data'] as Map<String, dynamic>;
     final iaqi = (data['iaqi'] as Map<String, dynamic>?) ?? {};
     final forecast = (data['forecast'] as Map<String, dynamic>?) ?? {};
     final daily = (forecast['daily'] as Map<String, dynamic>?) ?? {};
@@ -259,6 +246,149 @@ class AirQualityService {
         ),
       ],
     );
+  }
+
+  Future<List<HourlyForecastPoint>> fetchEstimatedHourlyForecast(
+    String locationName,
+  ) async {
+    final location = locations.firstWhere(
+      (item) => item.name == locationName,
+      orElse: () => locations.first,
+    );
+
+    final data = await _fetchWaqiData(location);
+    final forecast = (data['forecast'] as Map<String, dynamic>?) ?? {};
+    final daily = (forecast['daily'] as Map<String, dynamic>?) ?? {};
+
+    final pm25List = (daily['pm25'] as List?)?.cast<dynamic>() ?? [];
+    final pm10List = (daily['pm10'] as List?)?.cast<dynamic>() ?? [];
+
+    final today = DateTime.now();
+    final todayKey =
+        '${today.year.toString().padLeft(4, '0')}-'
+        '${today.month.toString().padLeft(2, '0')}-'
+        '${today.day.toString().padLeft(2, '0')}';
+
+    final tomorrow = today.add(const Duration(days: 1));
+    final tomorrowKey =
+        '${tomorrow.year.toString().padLeft(4, '0')}-'
+        '${tomorrow.month.toString().padLeft(2, '0')}-'
+        '${tomorrow.day.toString().padLeft(2, '0')}';
+
+    final todayAvg =
+        _findDailyAverageByDate(pm25List, todayKey) ??
+        _findDailyAverageByDate(pm10List, todayKey) ??
+        _dailyAverage(daily, 'pm25') ??
+        _dailyAverage(daily, 'pm10') ??
+        60.0;
+
+    final tomorrowAvg =
+        _findDailyAverageByDate(pm25List, tomorrowKey) ??
+        _findDailyAverageByDate(pm10List, tomorrowKey) ??
+        todayAvg;
+
+    return _buildEstimatedHourlyPoints(
+      todayAverage: todayAvg,
+      tomorrowAverage: tomorrowAvg,
+    );
+  }
+
+  Future<Map<String, dynamic>> _fetchWaqiData(AirQualityLocation location) async {
+    final uri = Uri.parse(
+      'https://api.waqi.info/feed/${location.query}/?token=$_token',
+    );
+
+    final response = await http.get(uri);
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to fetch WAQI data');
+    }
+
+    final jsonMap = jsonDecode(response.body) as Map<String, dynamic>;
+
+    if (jsonMap['status'] != 'ok') {
+      throw Exception('WAQI returned status: ${jsonMap['status']}');
+    }
+
+    return jsonMap['data'] as Map<String, dynamic>;
+  }
+
+  List<HourlyForecastPoint> _buildEstimatedHourlyPoints({
+    required double todayAverage,
+    required double tomorrowAverage,
+  }) {
+    const hourLabels = [
+      '00:00',
+      '01:00',
+      '02:00',
+      '03:00',
+      '04:00',
+      '05:00',
+      '06:00',
+      '07:00',
+      '08:00',
+      '09:00',
+      '10:00',
+      '11:00',
+      '12:00',
+      '13:00',
+      '14:00',
+      '15:00',
+      '16:00',
+      '17:00',
+      '18:00',
+      '19:00',
+      '20:00',
+      '21:00',
+      '22:00',
+      '23:00',
+    ];
+
+    final baseline = todayAverage;
+    final nextInfluence = tomorrowAverage - todayAverage;
+
+    return List.generate(24, (index) {
+      final h = index.toDouble();
+
+      double value = baseline;
+
+      value += _gaussian(h, mean: 4.0, sigma: 1.8) * (-0.32 * baseline);
+      value += _gaussian(h, mean: 13.5, sigma: 3.6) * (0.12 * baseline);
+      value += _gaussian(h, mean: 18.8, sigma: 2.1) * (0.30 * baseline);
+      value += math.sin((h / 24) * 2 * math.pi - 0.9) * 4.0;
+      value += (nextInfluence * (h / 23.0)) * 0.28;
+
+      final bounded = value.clamp(
+        math.max(10.0, baseline * 0.68),
+        math.max(25.0, baseline * 1.32),
+      );
+
+      return HourlyForecastPoint(
+        hourLabel: hourLabels[index],
+        aqi: double.parse(bounded.toStringAsFixed(1)),
+      );
+    });
+  }
+
+  double _gaussian(
+    double x, {
+    required double mean,
+    required double sigma,
+  }) {
+    final exponent = -math.pow(x - mean, 2) / (2 * math.pow(sigma, 2));
+    return math.exp(exponent);
+  }
+
+  double? _findDailyAverageByDate(List<dynamic> values, String dateKey) {
+    for (final item in values) {
+      if (item is Map<String, dynamic> && item['day']?.toString() == dateKey) {
+        final avg = item['avg'];
+        if (avg != null) {
+          return double.tryParse(avg.toString());
+        }
+      }
+    }
+    return null;
   }
 
   int? _parseAqi(Map<String, dynamic> data, Map<String, dynamic> daily) {
