@@ -15,7 +15,12 @@ import 'widgets/important_contacts_card.dart';
 import 'widgets/warning_signs_card.dart';
 
 class HealthScreen extends StatelessWidget {
-  const HealthScreen({super.key});
+  final String? selectedLocation;
+
+  const HealthScreen({
+    super.key,
+    this.selectedLocation,
+  });
 
   void _handleBottomNav(BuildContext context, int index, String location) {
     if (index == 0) {
@@ -54,7 +59,7 @@ class HealthScreen extends StatelessWidget {
         categoryText: '--',
         adviceTitle: 'Current air quality data unavailable',
         description:
-        'Live AQI data could not be loaded right now, so health guidance cannot be determined.',
+            'Live AQI data could not be loaded right now, so health guidance cannot be determined.',
         recommendations: const [
           'Try refreshing again in a moment',
           'Check your network connection',
@@ -71,7 +76,7 @@ class HealthScreen extends StatelessWidget {
         categoryText: category,
         adviceTitle: 'Air quality is good',
         description:
-        'Air quality poses little or no risk. It is a good time for normal outdoor activities.',
+            'Air quality poses little or no risk. It is a good time for normal outdoor activities.',
         recommendations: const [
           'Outdoor activities are safe for most people',
           'Fresh air ventilation is generally fine',
@@ -89,7 +94,7 @@ class HealthScreen extends StatelessWidget {
         categoryText: category,
         adviceTitle: 'Air quality is acceptable',
         description:
-        'Air quality is acceptable for most people. Sensitive individuals may experience minor effects.',
+            'Air quality is acceptable for most people. Sensitive individuals may experience minor effects.',
         recommendations: const [
           'Most outdoor activities are fine',
           'If you have respiratory issues, monitor how you feel',
@@ -107,7 +112,7 @@ class HealthScreen extends StatelessWidget {
         categoryText: category,
         adviceTitle: 'Sensitive groups should take care',
         description:
-        'Children, older adults, and people with heart or lung conditions should reduce prolonged outdoor exertion.',
+            'Children, older adults, and people with heart or lung conditions should reduce prolonged outdoor exertion.',
         recommendations: const [
           'Sensitive groups should limit time outdoors',
           'Reduce heavy outdoor exercise',
@@ -125,7 +130,7 @@ class HealthScreen extends StatelessWidget {
         categoryText: category,
         adviceTitle: 'Air quality is unhealthy',
         description:
-        'Everyone may begin to experience health effects, especially sensitive groups.',
+            'Everyone may begin to experience health effects, especially sensitive groups.',
         recommendations: const [
           'Limit outdoor activities',
           'Avoid strenuous outdoor exercise',
@@ -143,7 +148,7 @@ class HealthScreen extends StatelessWidget {
         categoryText: category,
         adviceTitle: 'Health alert: very unhealthy air',
         description:
-        'Health risk is increased for everyone. Outdoor exposure should be minimized.',
+            'Health risk is increased for everyone. Outdoor exposure should be minimized.',
         recommendations: const [
           'Stay indoors as much as possible',
           'Wear a mask if you must go outside',
@@ -160,7 +165,7 @@ class HealthScreen extends StatelessWidget {
       categoryText: category,
       adviceTitle: 'Hazardous air quality',
       description:
-      'This is an emergency-level pollution condition. Everyone should avoid outdoor exposure.',
+          'This is an emergency-level pollution condition. Everyone should avoid outdoor exposure.',
       recommendations: const [
         'Stay indoors and keep doors and windows closed',
         'Use air purification if available',
@@ -174,8 +179,9 @@ class HealthScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String location =
+        selectedLocation ??
         (ModalRoute.of(context)?.settings.arguments as String?) ??
-            'Kuala Lumpur City Centre';
+        'Kuala Lumpur City Centre';
 
     const guidelineItems = [
       HealthGuidelineItem(
@@ -281,7 +287,7 @@ class HealthScreen extends StatelessWidget {
                     categoryText: '--',
                     adviceTitle: 'Loading current air quality...',
                     description:
-                    'Please wait while we fetch the latest air quality data.',
+                        'Please wait while we fetch the latest air quality data.',
                     recommendations: [
                       'Loading current AQI',
                     ],
@@ -295,7 +301,7 @@ class HealthScreen extends StatelessWidget {
                     categoryText: '--',
                     adviceTitle: 'Current air quality data unavailable',
                     description:
-                    'Live AQI data could not be loaded for this location.',
+                        'Live AQI data could not be loaded for this location.',
                     recommendations: const [
                       'Try again in a moment',
                       'Check your network or API connection',

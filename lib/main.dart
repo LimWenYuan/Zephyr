@@ -29,19 +29,46 @@ class ZephyrApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => const HomeScreen(),
-        '/forecast': (context) => const ForecastScreen(),
-        '/trends': (context) => const TrendsScreen(),
-        '/health': (context) => const HealthScreen(),
       },
       onGenerateRoute: (settings) {
+        final selectedLocation = settings.arguments as String?;
+
         if (settings.name == '/dashboard') {
-          final selectedLocation = settings.arguments as String?;
           return MaterialPageRoute(
+            settings: settings,
             builder: (context) => DashboardScreen(
               selectedLocation: selectedLocation,
             ),
           );
         }
+
+        if (settings.name == '/forecast') {
+          return MaterialPageRoute(
+            settings: settings,
+            builder: (context) => ForecastScreen(
+              selectedLocation: selectedLocation,
+            ),
+          );
+        }
+
+        if (settings.name == '/trends') {
+          return MaterialPageRoute(
+            settings: settings,
+            builder: (context) => TrendsScreen(
+              selectedLocation: selectedLocation,
+            ),
+          );
+        }
+
+        if (settings.name == '/health') {
+          return MaterialPageRoute(
+            settings: settings,
+            builder: (context) => HealthScreen(
+              selectedLocation: selectedLocation,
+            ),
+          );
+        }
+
         return null;
       },
     );

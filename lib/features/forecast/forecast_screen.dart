@@ -14,7 +14,12 @@ import 'widgets/seven_day_bar_chart_card.dart';
 import '../../data/services/forecast_history_service.dart';
 
 class ForecastScreen extends StatefulWidget {
-  const ForecastScreen({super.key});
+  final String? selectedLocation;
+
+  const ForecastScreen({
+    super.key,
+    this.selectedLocation,
+  });
 
   @override
   State<ForecastScreen> createState() => _ForecastScreenState();
@@ -60,17 +65,17 @@ class _ForecastScreenState extends State<ForecastScreen> {
 
     bestTimeRange: '02:00 - 06:00',
     bestTimeDescription:
-    'Ideal for walks, exercise, and outdoor activities. Air quality is at its best during this period.',
+        'Ideal for walks, exercise, and outdoor activities. Air quality is at its best during this period.',
     bestTimeMeta: 'Avg AQI: 44',
 
     stayIndoorsRange: '16:00 - 20:00',
     stayIndoorsDescription:
-    'Air quality is poorest during these hours. Consider staying indoors with air conditioning or purifiers.',
+        'Air quality is poorest during these hours. Consider staying indoors with air conditioning or purifiers.',
     stayIndoorsMeta: 'Avg AQI: 85',
 
     exerciseRange: '02:00 - 06:00',
     exerciseDescription:
-    'Perfect conditions for jogging, cycling, or other aerobic activities.',
+        'Perfect conditions for jogging, cycling, or other aerobic activities.',
     exerciseMeta: '✓ All activities safe',
 
     showHighRiskAlert: false,
@@ -90,8 +95,9 @@ class _ForecastScreenState extends State<ForecastScreen> {
     _hasLoadedHistory = true;
 
     final String location =
+        widget.selectedLocation ??
         (ModalRoute.of(context)?.settings.arguments as String?) ??
-            'Kuala Lumpur City Centre';
+        'Kuala Lumpur City Centre';
 
     _loadSevenDayForecast(location);
   }
@@ -259,8 +265,9 @@ class _ForecastScreenState extends State<ForecastScreen> {
   @override
   Widget build(BuildContext context) {
     final String location =
+        widget.selectedLocation ??
         (ModalRoute.of(context)?.settings.arguments as String?) ??
-            'Kuala Lumpur City Centre';
+        'Kuala Lumpur City Centre';
 
     final selectedItem = _displayItems[selectedDayIndex];
 
@@ -310,7 +317,7 @@ class _ForecastScreenState extends State<ForecastScreen> {
                               bestTimeMeta: data.bestTimeMeta,
                               stayIndoorsRange: data.stayIndoorsRange,
                               stayIndoorsDescription:
-                              data.stayIndoorsDescription,
+                                  data.stayIndoorsDescription,
                               stayIndoorsMeta: data.stayIndoorsMeta,
                               exerciseRange: data.exerciseRange,
                               exerciseDescription: data.exerciseDescription,

@@ -17,7 +17,12 @@ import 'widgets/trends_range_selector.dart';
 import 'widgets/trends_summary_cards.dart';
 
 class TrendsScreen extends StatefulWidget {
-  const TrendsScreen({super.key});
+  final String? selectedLocation;
+
+  const TrendsScreen({
+    super.key,
+    this.selectedLocation,
+  });
 
   @override
   State<TrendsScreen> createState() => _TrendsScreenState();
@@ -41,10 +46,16 @@ class _TrendsScreenState extends State<TrendsScreen> {
   );
 
   String get _selectedLocation {
+    if (widget.selectedLocation != null &&
+        widget.selectedLocation!.trim().isNotEmpty) {
+      return widget.selectedLocation!;
+    }
+
     final args = ModalRoute.of(context)?.settings.arguments;
     if (args is String && args.trim().isNotEmpty) {
       return args;
     }
+
     return 'Kuala Lumpur City Centre';
   }
 
@@ -54,97 +65,97 @@ class _TrendsScreenState extends State<TrendsScreen> {
       _data.summaries.isNotEmpty
           ? _data.summaries
           : const [
-        TrendsSummaryData(
-          title: 'Average AQI',
-          valueText: '--',
-          subtitle: 'No data yet',
-          valueColor: AppColors.primary,
-        ),
-        TrendsSummaryData(
-          title: 'Highest AQI',
-          valueText: '--',
-          subtitle: 'No data yet',
-          valueColor: Color(0xFFEA580C),
-        ),
-        TrendsSummaryData(
-          title: 'Lowest AQI',
-          valueText: '--',
-          subtitle: 'No data yet',
-          valueColor: Color(0xFF16A34A),
-        ),
-        TrendsSummaryData(
-          title: 'Unhealthy Days',
-          valueText: '--',
-          subtitle: 'No data yet',
-          valueColor: Color(0xFFDC2626),
-        ),
-      ];
+              TrendsSummaryData(
+                title: 'Average AQI',
+                valueText: '--',
+                subtitle: 'No data yet',
+                valueColor: AppColors.primary,
+              ),
+              TrendsSummaryData(
+                title: 'Highest AQI',
+                valueText: '--',
+                subtitle: 'No data yet',
+                valueColor: Color(0xFFEA580C),
+              ),
+              TrendsSummaryData(
+                title: 'Lowest AQI',
+                valueText: '--',
+                subtitle: 'No data yet',
+                valueColor: Color(0xFF16A34A),
+              ),
+              TrendsSummaryData(
+                title: 'Unhealthy Days',
+                valueText: '--',
+                subtitle: 'No data yet',
+                valueColor: Color(0xFFDC2626),
+              ),
+            ];
 
   List<WeeklyBarItem> get _weeklyItems =>
       _data.weeklyBars.isNotEmpty
           ? _data.weeklyBars
           : const [
-        WeeklyBarItem(label: 'Week 1', value: 0),
-        WeeklyBarItem(label: 'Week 2', value: 0),
-        WeeklyBarItem(label: 'Week 3', value: 0),
-        WeeklyBarItem(label: 'Week 4', value: 0),
-      ];
+              WeeklyBarItem(label: 'Week 1', value: 0),
+              WeeklyBarItem(label: 'Week 2', value: 0),
+              WeeklyBarItem(label: 'Week 3', value: 0),
+              WeeklyBarItem(label: 'Week 4', value: 0),
+            ];
 
   List<DistributionItem> get _distributionItems =>
       _data.distributionItems.isNotEmpty
           ? _data.distributionItems
           : const [
-        DistributionItem(
-          label: 'Good',
-          count: 0,
-          percentage: 0,
-          color: Color(0xFF6BB8A8),
-        ),
-        DistributionItem(
-          label: 'Moderate',
-          count: 0,
-          percentage: 0,
-          color: Color(0xFF7EC4D5),
-        ),
-      ];
+              DistributionItem(
+                label: 'Good',
+                count: 0,
+                percentage: 0,
+                color: Color(0xFF6BB8A8),
+              ),
+              DistributionItem(
+                label: 'Moderate',
+                count: 0,
+                percentage: 0,
+                color: Color(0xFF7EC4D5),
+              ),
+            ];
 
   List<InsightItem> get _insightItems =>
       _data.insights.isNotEmpty
           ? _data.insights
           : const [
-        InsightItem(
-          title: 'Daily Pattern',
-          body: 'Insights will appear when trend data is available.',
-          borderColor: Color(0xFF3B82F6),
-          backgroundColor: Color(0xFFEFF6FF),
-          titleColor: Color(0xFF1E40AF),
-          bodyColor: Color(0xFF1D4ED8),
-        ),
-        InsightItem(
-          title: 'Weekly Pattern',
-          body: 'Insights will appear when trend data is available.',
-          borderColor: Color(0xFF22C55E),
-          backgroundColor: Color(0xFFF0FDF4),
-          titleColor: Color(0xFF166534),
-          bodyColor: Color(0xFF15803D),
-        ),
-        InsightItem(
-          title: 'Seasonal Consideration',
-          body: 'Insights will appear when trend data is available.',
-          borderColor: Color(0xFFF97316),
-          backgroundColor: Color(0xFFFFF7ED),
-          titleColor: Color(0xFF9A3412),
-          bodyColor: Color(0xFFC2410C),
-        ),
-        InsightItem(
-          title: 'Long-term Planning',
-          body: 'Insights will appear when trend data is available.',
-          borderColor: Color(0xFFA855F7),
-          backgroundColor: Color(0xFFFAF5FF),
-          titleColor: Color(0xFF6B21A8),
-          bodyColor: Color(0xFF7E22CE),
-        ),
-      ];
+              InsightItem(
+                title: 'Daily Pattern',
+                body: 'Insights will appear when trend data is available.',
+                borderColor: Color(0xFF3B82F6),
+                backgroundColor: Color(0xFFEFF6FF),
+                titleColor: Color(0xFF1E40AF),
+                bodyColor: Color(0xFF1D4ED8),
+              ),
+              InsightItem(
+                title: 'Weekly Pattern',
+                body: 'Insights will appear when trend data is available.',
+                borderColor: Color(0xFF22C55E),
+                backgroundColor: Color(0xFFF0FDF4),
+                titleColor: Color(0xFF166534),
+                bodyColor: Color(0xFF15803D),
+              ),
+              InsightItem(
+                title: 'Seasonal Consideration',
+                body: 'Insights will appear when trend data is available.',
+                borderColor: Color(0xFFF97316),
+                backgroundColor: Color(0xFFFFF7ED),
+                titleColor: Color(0xFF9A3412),
+                bodyColor: Color(0xFFC2410C),
+              ),
+              InsightItem(
+                title: 'Long-term Planning',
+                body: 'Insights will appear when trend data is available.',
+                borderColor: Color(0xFFA855F7),
+                backgroundColor: Color(0xFFFAF5FF),
+                titleColor: Color(0xFF6B21A8),
+                bodyColor: Color(0xFF7E22CE),
+              ),
+            ];
 
   @override
   void initState() {
