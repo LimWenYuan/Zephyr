@@ -16,9 +16,7 @@ class DailyForecastCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = selected
-        ? AppColors.primary
-        : _categoryBorder(item.aqi);
+    final style = _aqiStyle(item.aqi);
 
     return InkWell(
       onTap: onTap,
@@ -26,9 +24,12 @@ class DailyForecastCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: style.backgroundColor,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: borderColor, width: 2),
+          border: Border.all(
+            color: style.textColor,
+            width: selected ? 3 : 2,
+          ),
           boxShadow: const [
             BoxShadow(
               color: Color(0x1A000000),
@@ -65,7 +66,7 @@ class DailyForecastCard extends StatelessWidget {
               height: 100,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: _circleColor(item.aqi),
+                color: style.textColor,
                 boxShadow: const [
                   BoxShadow(
                     color: Color(0x1A000000),
@@ -92,7 +93,7 @@ class DailyForecastCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: _circleColor(item.aqi),
+                color: style.textColor,
                 height: 1.3,
               ),
             ),
@@ -150,23 +151,56 @@ class DailyForecastCard extends StatelessWidget {
     );
   }
 
-  Color _categoryBorder(int? aqi) {
-    if (aqi == null) return const Color(0xFF93C5FD);
-    if (aqi <= 50) return const Color(0xFF86EFAC);
-    if (aqi <= 100) return const Color(0xFF93C5FD);
-    if (aqi <= 150) return const Color(0xFFF4C84F);
-    if (aqi <= 200) return const Color(0xFFFDBA74);
-    if (aqi <= 300) return const Color(0xFFE67E73);
-    return const Color(0xFFC85A5A);
+  _AqiVisualStyle _aqiStyle(int? aqi) {
+    if (aqi == null) {
+      return const _AqiVisualStyle(
+        backgroundColor: Color(0xFFF3F4F6),
+        textColor: AppColors.foreground,
+      );
+    }
+    if (aqi <= 50) {
+      return const _AqiVisualStyle(
+        backgroundColor: Color(0xFFDCFCE7),
+        textColor: Color(0xFF16A34A),
+      );
+    }
+    if (aqi <= 100) {
+      return const _AqiVisualStyle(
+        backgroundColor: Color(0xFFFEF9C3),
+        textColor: Color(0xFFCA8A04),
+      );
+    }
+    if (aqi <= 150) {
+      return const _AqiVisualStyle(
+        backgroundColor: Color(0xFFFFEDD5),
+        textColor: Color(0xFFF97316),
+      );
+    }
+    if (aqi <= 200) {
+      return const _AqiVisualStyle(
+        backgroundColor: Color(0xFFFEE2E2),
+        textColor: Color(0xFFDC2626),
+      );
+    }
+    if (aqi <= 300) {
+      return const _AqiVisualStyle(
+        backgroundColor: Color(0xFFF3E8FF),
+        textColor: Color(0xFF9333EA),
+      );
+    }
+    return const _AqiVisualStyle(
+      backgroundColor: Color(0xFFFECACA),
+      textColor: Color(0xFF7F1D1D),
+    );
   }
+}
 
-  Color _circleColor(int? aqi) {
-    if (aqi == null) return const Color(0xFF7EC4D5);
-    if (aqi <= 50) return const Color(0xFF6BB8A8);
-    if (aqi <= 100) return const Color(0xFF7EC4D5);
-    if (aqi <= 150) return const Color(0xFFF4C84F);
-    if (aqi <= 200) return const Color(0xFFF89C4F);
-    if (aqi <= 300) return const Color(0xFFE67E73);
-    return const Color(0xFFC85A5A);
-  }
+class _AqiVisualStyle {
+  final Color backgroundColor;
+  final Color textColor;
+
+  const _AqiVisualStyle({
+    required this.backgroundColor,
+    required this.textColor,
+  });
 }
