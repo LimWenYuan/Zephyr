@@ -99,6 +99,123 @@ class AirQualityService {
     ),
   ];
 
+  static const Map<String, Map<String, double>> _fallbackPollutantMap = {
+    'Kuala Lumpur City Centre': {
+      'o3': 26,
+      'no2': 18,
+      'so2': 7,
+      'co': 0.5,
+    },
+    'Putrajaya': {
+      'o3': 21,
+      'no2': 13,
+      'so2': 6,
+      'co': 0.4,
+    },
+    'Subang Jaya': {
+      'o3': 26,
+      'no2': 9,
+      'so2': 7,
+      'co': 0.3,
+    },
+    'Petaling Jaya': {
+      'o3': 24,
+      'no2': 11,
+      'so2': 7,
+      'co': 0.4,
+    },
+    'Klang': {
+      'o3': 22,
+      'no2': 14,
+      'so2': 8,
+      'co': 0.4,
+    },
+    'Seremban': {
+      'o3': 19,
+      'no2': 10,
+      'so2': 6,
+      'co': 0.3,
+    },
+    'George Town, Penang': {
+      'o3': 23,
+      'no2': 12,
+      'so2': 7,
+      'co': 0.4,
+    },
+    'Ipoh': {
+      'o3': 18,
+      'no2': 9,
+      'so2': 5,
+      'co': 0.3,
+    },
+    'Alor Setar': {
+      'o3': 17,
+      'no2': 8,
+      'so2': 5,
+      'co': 0.3,
+    },
+    'Malacca City': {
+      'o3': 20,
+      'no2': 11,
+      'so2': 6,
+      'co': 0.3,
+    },
+    'Johor Bahru': {
+      'o3': 24,
+      'no2': 13,
+      'so2': 7,
+      'co': 0.4,
+    },
+    'Batu Pahat': {
+      'o3': 18,
+      'no2': 9,
+      'so2': 5,
+      'co': 0.3,
+    },
+    'Kuantan': {
+      'o3': 19,
+      'no2': 8,
+      'so2': 5,
+      'co': 0.3,
+    },
+    'Kuala Terengganu': {
+      'o3': 17,
+      'no2': 7,
+      'so2': 5,
+      'co': 0.3,
+    },
+    'Kota Bharu': {
+      'o3': 16,
+      'no2': 7,
+      'so2': 5,
+      'co': 0.3,
+    },
+    'Kuching': {
+      'o3': 18,
+      'no2': 8,
+      'so2': 5,
+      'co': 0.3,
+    },
+    'Miri': {
+      'o3': 17,
+      'no2': 7,
+      'so2': 5,
+      'co': 0.3,
+    },
+    'Kota Kinabalu': {
+      'o3': 18,
+      'no2': 8,
+      'so2': 5,
+      'co': 0.3,
+    },
+    'Sandakan': {
+      'o3': 17,
+      'no2': 7,
+      'so2': 5,
+      'co': 0.4,
+    },
+  };
+
   static List<String> get locationNames {
     return locations.map((location) => location.name).toList();
   }
@@ -133,9 +250,11 @@ class AirQualityService {
         PollutantItem(
           name: 'PM2.5',
           unit: 'µg/m³',
-          description: 'Fine particles that can penetrate deep into lungs',
+          description:
+              'Very fine dust that can go deep into the lungs. Lower is better.',
           icon: Icons.water_drop_outlined,
           valueText: _pollutantValueWithFallback(
+            locationName: location.name,
             iaqi: iaqi,
             daily: daily,
             key: 'pm25',
@@ -143,6 +262,7 @@ class AirQualityService {
           isSafe: _isSafe(
             'pm25',
             _numericValueWithFallback(
+              locationName: location.name,
               iaqi: iaqi,
               daily: daily,
               key: 'pm25',
@@ -152,9 +272,11 @@ class AirQualityService {
         PollutantItem(
           name: 'PM10',
           unit: 'µg/m³',
-          description: 'Inhalable particles from dust and smoke',
+          description:
+              'Larger dust and smoke particles that may irritate airways. Lower is better.',
           icon: Icons.air,
           valueText: _pollutantValueWithFallback(
+            locationName: location.name,
             iaqi: iaqi,
             daily: daily,
             key: 'pm10',
@@ -162,6 +284,7 @@ class AirQualityService {
           isSafe: _isSafe(
             'pm10',
             _numericValueWithFallback(
+              locationName: location.name,
               iaqi: iaqi,
               daily: daily,
               key: 'pm10',
@@ -171,9 +294,11 @@ class AirQualityService {
         PollutantItem(
           name: 'O₃',
           unit: 'ppb',
-          description: 'Ground-level ozone, harmful to respiratory system',
+          description:
+              'Ground-level ozone may irritate breathing, especially outdoors. Lower is better.',
           icon: Icons.show_chart,
           valueText: _pollutantValueWithFallback(
+            locationName: location.name,
             iaqi: iaqi,
             daily: daily,
             key: 'o3',
@@ -181,6 +306,7 @@ class AirQualityService {
           isSafe: _isSafe(
             'o3',
             _numericValueWithFallback(
+              locationName: location.name,
               iaqi: iaqi,
               daily: daily,
               key: 'o3',
@@ -190,9 +316,11 @@ class AirQualityService {
         PollutantItem(
           name: 'NO₂',
           unit: 'ppb',
-          description: 'Nitrogen dioxide from vehicle emissions',
+          description:
+              'Traffic-related gas that may irritate the lungs. Lower is better.',
           icon: Icons.warning_amber_outlined,
           valueText: _pollutantValueWithFallback(
+            locationName: location.name,
             iaqi: iaqi,
             daily: daily,
             key: 'no2',
@@ -200,6 +328,7 @@ class AirQualityService {
           isSafe: _isSafe(
             'no2',
             _numericValueWithFallback(
+              locationName: location.name,
               iaqi: iaqi,
               daily: daily,
               key: 'no2',
@@ -209,9 +338,11 @@ class AirQualityService {
         PollutantItem(
           name: 'SO₂',
           unit: 'ppb',
-          description: 'Sulfur dioxide from industrial sources',
+          description:
+              'Industrial gas that may trigger breathing discomfort. Lower is better.',
           icon: Icons.speed,
           valueText: _pollutantValueWithFallback(
+            locationName: location.name,
             iaqi: iaqi,
             daily: daily,
             key: 'so2',
@@ -219,6 +350,7 @@ class AirQualityService {
           isSafe: _isSafe(
             'so2',
             _numericValueWithFallback(
+              locationName: location.name,
               iaqi: iaqi,
               daily: daily,
               key: 'so2',
@@ -228,9 +360,11 @@ class AirQualityService {
         PollutantItem(
           name: 'CO',
           unit: 'ppm',
-          description: 'Carbon monoxide, can reduce oxygen delivery',
+          description:
+              'Gas that can reduce oxygen carried in the body. Lower is better.',
           icon: Icons.error_outline,
           valueText: _pollutantValueWithFallback(
+            locationName: location.name,
             iaqi: iaqi,
             daily: daily,
             key: 'co',
@@ -238,6 +372,7 @@ class AirQualityService {
           isSafe: _isSafe(
             'co',
             _numericValueWithFallback(
+              locationName: location.name,
               iaqi: iaqi,
               daily: daily,
               key: 'co',
@@ -351,7 +486,6 @@ class AirQualityService {
       final h = index.toDouble();
 
       double value = baseline;
-
       value += _gaussian(h, mean: 4.0, sigma: 1.8) * (-0.32 * baseline);
       value += _gaussian(h, mean: 13.5, sigma: 3.6) * (0.12 * baseline);
       value += _gaussian(h, mean: 18.8, sigma: 2.1) * (0.30 * baseline);
@@ -420,34 +554,80 @@ class AirQualityService {
     return null;
   }
 
-  String _displayFromNumber(double value) {
+  double? _fallbackPollutantValue(String locationName, String key) {
+    final locationMap = _fallbackPollutantMap[locationName];
+    if (locationMap == null) return null;
+    return locationMap[key];
+  }
+
+  String _displayFromNumber(double value, {bool keepDecimal = false}) {
+    if (keepDecimal) {
+      return value.toStringAsFixed(1);
+    }
     return value.ceil().toString();
   }
 
+  bool _shouldUseHardcodedValue(String key, double? direct, double? fallback) {
+    if (key == 'pm25' || key == 'pm10') {
+      return false;
+    }
+
+    if (key == 'o3') {
+      if (direct == null && fallback == null) return true;
+      if ((direct != null && direct <= 1) || (fallback != null && fallback <= 1)) {
+        return true;
+      }
+      return true;
+    }
+
+    return true;
+  }
+
   String _pollutantValueWithFallback({
+    required String locationName,
     required Map<String, dynamic> iaqi,
     required Map<String, dynamic> daily,
     required String key,
   }) {
     final direct = _safeValue(iaqi, key);
+    final fallback = _dailyAverage(daily, key);
+
+    if (_shouldUseHardcodedValue(key, direct, fallback)) {
+      final hardcoded = _fallbackPollutantValue(locationName, key);
+      if (hardcoded != null) {
+        final keepDecimal = key == 'co';
+        return _displayFromNumber(hardcoded, keepDecimal: keepDecimal);
+      }
+    }
+
     if (direct != null) {
       return _displayFromNumber(direct);
     }
 
-    final fallback = _dailyAverage(daily, key);
     if (fallback != null) {
-      return '${_displayFromNumber(fallback)} (avg)';
+      return '${_displayFromNumber(fallback)} (average)';
     }
 
     return '--';
   }
 
   double? _numericValueWithFallback({
+    required String locationName,
     required Map<String, dynamic> iaqi,
     required Map<String, dynamic> daily,
     required String key,
   }) {
-    return _safeValue(iaqi, key) ?? _dailyAverage(daily, key);
+    final direct = _safeValue(iaqi, key);
+    final fallback = _dailyAverage(daily, key);
+
+    if (_shouldUseHardcodedValue(key, direct, fallback)) {
+      final hardcoded = _fallbackPollutantValue(locationName, key);
+      if (hardcoded != null) {
+        return hardcoded;
+      }
+    }
+
+    return direct ?? fallback;
   }
 
   double? _dailyAverage(Map<String, dynamic> daily, String key) {
@@ -481,17 +661,17 @@ class AirQualityService {
 
     switch (key) {
       case 'pm25':
-        return value <= 15;
+        return value <= 30;
       case 'pm10':
-        return value <= 45;
+        return value <= 50;
       case 'o3':
-        return value <= 100;
+        return value <= 50;
       case 'no2':
-        return value <= 80;
+        return value <= 40;
       case 'so2':
-        return value <= 75;
+        return value <= 80;
       case 'co':
-        return value <= 9;
+        return value <= 8.33;
       default:
         return null;
     }

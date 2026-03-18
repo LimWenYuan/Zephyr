@@ -39,7 +39,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
 
     selectedLocation = widget.selectedLocation != null &&
-        AirQualityService.locationNames.contains(widget.selectedLocation)
+            AirQualityService.locationNames.contains(widget.selectedLocation)
         ? widget.selectedLocation!
         : AirQualityService.locationNames.first;
 
@@ -65,37 +65,43 @@ class _DashboardScreenState extends State<DashboardScreen> {
         PollutantItem(
           name: 'PM2.5',
           unit: 'µg/m³',
-          description: 'Fine particles that can penetrate deep into lungs',
+          description:
+              'Very fine dust that can go deep into the lungs. Lower is better.',
           icon: Icons.water_drop_outlined,
         ),
         PollutantItem(
           name: 'PM10',
           unit: 'µg/m³',
-          description: 'Inhalable particles from dust and smoke',
+          description:
+              'Larger dust and smoke particles that may irritate airways. Lower is better.',
           icon: Icons.air,
         ),
         PollutantItem(
           name: 'O₃',
           unit: 'ppb',
-          description: 'Ground-level ozone, harmful to respiratory system',
+          description:
+              'Ground-level ozone may irritate breathing, especially outdoors. Lower is better.',
           icon: Icons.show_chart,
         ),
         PollutantItem(
           name: 'NO₂',
           unit: 'ppb',
-          description: 'Nitrogen dioxide from vehicle emissions',
+          description:
+              'Traffic-related gas that may irritate the lungs. Lower is better.',
           icon: Icons.warning_amber_outlined,
         ),
         PollutantItem(
           name: 'SO₂',
           unit: 'ppb',
-          description: 'Sulfur dioxide from industrial sources',
+          description:
+              'Industrial gas that may trigger breathing discomfort. Lower is better.',
           icon: Icons.speed,
         ),
         PollutantItem(
           name: 'CO',
           unit: 'ppm',
-          description: 'Carbon monoxide, can reduce oxygen delivery',
+          description:
+              'Gas that can reduce oxygen carried in the body. Lower is better.',
           icon: Icons.error_outline,
         ),
       ],
@@ -109,7 +115,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
 
     try {
-      final fetchedData = await _airQualityService.fetchDashboardData(selectedLocation);
+      final fetchedData =
+          await _airQualityService.fetchDashboardData(selectedLocation);
 
       setState(() {
         data = fetchedData;
@@ -139,16 +146,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
     await _loadAirQualityData();
   }
 
-    void _handleBottomNav(BuildContext context, int index) {
-  if (index == 0) {
-    return;
-  } else if (index == 1) {
-    Navigator.pushReplacementNamed(context, '/forecast', arguments: selectedLocation);
-  } else if (index == 2) {
-    Navigator.pushReplacementNamed(context, '/trends', arguments: selectedLocation);
-  } else if (index == 3) {
-    Navigator.pushReplacementNamed(context, '/health', arguments: selectedLocation);
-  }
+  void _handleBottomNav(BuildContext context, int index) {
+    if (index == 0) {
+      return;
+    } else if (index == 1) {
+      Navigator.pushReplacementNamed(
+        context,
+        '/forecast',
+        arguments: selectedLocation,
+      );
+    } else if (index == 2) {
+      Navigator.pushReplacementNamed(
+        context,
+        '/trends',
+        arguments: selectedLocation,
+      );
+    } else if (index == 3) {
+      Navigator.pushReplacementNamed(
+        context,
+        '/health',
+        arguments: selectedLocation,
+      );
+    }
   }
 
   @override
