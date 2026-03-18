@@ -164,10 +164,11 @@ class _ForecastScreenState extends State<ForecastScreen> {
     } catch (e) {
       debugPrint('Failed to load 7-day forecast: $e');
     } finally {
-      if (!mounted) return;
-      setState(() {
-        _isLoadingHistory = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoadingHistory = false;
+        });
+      }
     }
   }
 

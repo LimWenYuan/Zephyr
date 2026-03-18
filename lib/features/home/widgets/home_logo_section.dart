@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_strings.dart';
-import '../../../core/constants/app_text_styles.dart';
 
 class HomeLogoSection extends StatelessWidget {
   const HomeLogoSection({super.key});
@@ -9,21 +7,38 @@ class HomeLogoSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Container(
-          width: 64,
-          height: 64,
-          alignment: Alignment.center,
-          child: const Icon(
-            Icons.air,
-            size: 52,
-            color: AppColors.primary,
-          ),
+        Image.asset(
+          'assets/images/zephyrlogo.jpeg',
+          height: 72,
+          fit: BoxFit.contain,
         ),
-        const SizedBox(width: 16),
-        const Text(
-          AppStrings.appName,
-          style: AppTextStyles.appName,
+        const SizedBox(width: 18),
+        const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Zephyr',
+              style: TextStyle(
+                fontSize: 44,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primary,
+                height: 1.0,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Your Breath of Fresh Air',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w400,
+                color: AppColors.mutedForeground,
+                height: 1.1,
+              ),
+            ),
+          ],
         ),
       ],
     );

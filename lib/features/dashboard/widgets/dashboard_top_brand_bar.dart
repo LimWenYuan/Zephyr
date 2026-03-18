@@ -8,38 +8,47 @@ class DashboardTopBrandBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      color: AppColors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 22),
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
+      decoration: const BoxDecoration(
+        color: AppColors.white,
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.borderPrimary20,
+            width: 2,
+          ),
+        ),
+      ),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1280),
           child: Row(
             children: [
-              const Icon(
-                Icons.air,
-                size: 60,
-                color: AppColors.primary,
+              Image.asset(
+                'assets/images/zephyrlogo.jpeg',
+                height: 58,
+                fit: BoxFit.contain,
               ),
               const SizedBox(width: 16),
-              Column(
+              const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
                     'Zephyr',
                     style: TextStyle(
-                      fontSize: 42,
+                      fontSize: 32,
                       fontWeight: FontWeight.w700,
                       color: AppColors.primary,
-                      height: 1.1,
+                      height: 1.0,
                     ),
                   ),
-                  SizedBox(height: 4),
+                  SizedBox(height: 6),
                   Text(
                     'Your Breath of Fresh Air',
                     style: TextStyle(
                       fontSize: 16,
+                      fontWeight: FontWeight.w400,
                       color: AppColors.mutedForeground,
-                      height: 1.2,
+                      height: 1.1,
                     ),
                   ),
                 ],
