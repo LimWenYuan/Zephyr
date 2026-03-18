@@ -21,7 +21,7 @@ class AirQualityService {
   static const List<AirQualityLocation> locations = [
     AirQualityLocation(
       name: 'Kuala Lumpur City Centre',
-      query: 'kuala-lumpur',
+      query: '@5780',
     ),
     AirQualityLocation(
       name: 'Putrajaya',
@@ -103,7 +103,7 @@ class AirQualityService {
 
   Future<DashboardViewData> fetchDashboardData(String locationName) async {
     final location = locations.firstWhere(
-          (item) => item.name == locationName,
+      (item) => item.name == locationName,
       orElse: () => locations.first,
     );
 

@@ -1,8 +1,5 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
-import '../services/air_quality_service.dart';
 import '../../features/trend/models/distribution_item.dart';
 import '../../features/trend/models/insight_item.dart';
 import '../../features/trend/models/trend_point.dart';
@@ -13,15 +10,11 @@ import '../../features/trend/models/weekly_bar_item.dart';
 class TrendsHistoryService {
   const TrendsHistoryService();
 
-  static const String _tableName = 'air_quality_reading';
-
-  SupabaseClient get _client => Supabase.instance.client;
-
   Future<TrendsViewData> loadTrends({
     required int days,
     required String location,
   }) async {
-    final rows = await _fetchDailyRows(
+    final rows = _buildDemoRows(
       days: days,
       location: location,
     );
@@ -47,10 +40,10 @@ class TrendsHistoryService {
     final historicalPoints = rows
         .map(
           (row) => TrendPoint(
-        label: _formatShortDate(row.date),
-        value: row.aqi,
-      ),
-    )
+            label: _formatShortDate(row.date),
+            value: row.aqi,
+          ),
+        )
         .toList();
 
     final weeklyBars = days == 7 ? <WeeklyBarItem>[] : _buildWeeklyBars(rows);
@@ -61,6 +54,7 @@ class TrendsHistoryService {
       unhealthyDays: unhealthyDays,
       highestRow: highestRow,
       lowestRow: lowestRow,
+      location: location,
     );
 
     return TrendsViewData(
@@ -68,7 +62,7 @@ class TrendsHistoryService {
         TrendsSummaryData(
           title: 'Average AQI',
           valueText: average.toStringAsFixed(0),
-          subtitle: '${rows.length} days recorded',
+          subtitle: '${rows.length} days',
           valueColor: const Color(0xFF0F766E),
         ),
         TrendsSummaryData(
@@ -97,72 +91,127 @@ class TrendsHistoryService {
     );
   }
 
-  Future<List<_TrendRow>> _fetchDailyRows({
+  List<_TrendRow> _buildDemoRows({
     required int days,
     required String location,
-  }) async {
-    final stationId = _stationIdFromLocation(location);
-    if (stationId == null) return [];
+  }) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
 
-    final now = DateTime.now().toUtc();
-    final fromDate = now.subtract(Duration(days: days + 7));
+    final seed = _locationSeed(location);
+    final profile = _locationProfile(location);
 
-    final response = await _client
-        .from(_tableName)
-        .select('station_id, api_value, created_at')
-        .eq('station_id', stationId)
-        .gte('created_at', fromDate.toIso8601String())
-        .order('created_at', ascending: false);
+    final rows = <_TrendRow>[];
 
-    final Map<String, List<double>> grouped = {};
+    for (int i = days - 1; i >= 0; i--) {
+      final date = today.subtract(Duration(days: i));
 
-    for (final row in response) {
-      final map = row;
+      final waveA = math.sin((days - i + seed) * 0.55) * profile.waveA;
+      final waveB = math.cos((days - i + seed) * 0.22) * profile.waveB;
+      final weeklyEffect = ((date.weekday % 3) - 1) * profile.weeklySwing;
+      final trendBias = ((days - i) / days) * profile.trendBias;
 
-      final createdAtRaw = map['created_at'];
-      final apiValueRaw = map['api_value'];
+      final value = profile.base + waveA + waveB + weeklyEffect + trendBias;
 
-      if (createdAtRaw == null || apiValueRaw == null) continue;
-
-      final createdAt = DateTime.tryParse(createdAtRaw.toString());
-      if (createdAt == null) continue;
-
-      final aqi = (apiValueRaw as num).toDouble();
-
-      final dateKey = _dateOnlyKey(createdAt.toLocal());
-      grouped.putIfAbsent(dateKey, () => []);
-      grouped[dateKey]!.add(aqi);
-    }
-
-    final dailyRows = grouped.entries.map((entry) {
-      final date = DateTime.parse(entry.key);
-      final values = entry.value;
-      final avg = values.reduce((a, b) => a + b) / values.length;
-
-      return _TrendRow(
-        date: date,
-        aqi: avg,
+      rows.add(
+        _TrendRow(
+          date: date,
+          aqi: value.clamp(profile.minClamp, profile.maxClamp).toDouble(),
+        ),
       );
-    }).toList();
-
-    dailyRows.sort((a, b) => a.date.compareTo(b.date));
-
-    if (dailyRows.length > days) {
-      return dailyRows.sublist(dailyRows.length - days);
     }
 
-    return dailyRows;
+    return rows;
   }
 
-  int? _stationIdFromLocation(String location) {
-    final names = AirQualityService.locationNames;
-    final index = names.indexWhere(
-          (name) => name.trim().toLowerCase() == location.trim().toLowerCase(),
+  _DemoProfile _locationProfile(String location) {
+    final normalized = location.trim().toLowerCase();
+
+    if (normalized.contains('kuala lumpur')) {
+      return const _DemoProfile(
+        base: 72,
+        waveA: 13,
+        waveB: 8,
+        weeklySwing: 4,
+        trendBias: 6,
+        minClamp: 46,
+        maxClamp: 118,
+      );
+    }
+
+    if (normalized.contains('subang') || normalized.contains('shah alam')) {
+      return const _DemoProfile(
+        base: 78,
+        waveA: 14,
+        waveB: 9,
+        weeklySwing: 5,
+        trendBias: 8,
+        minClamp: 50,
+        maxClamp: 126,
+      );
+    }
+
+    if (normalized.contains('putrajaya')) {
+      return const _DemoProfile(
+        base: 60,
+        waveA: 10,
+        waveB: 7,
+        weeklySwing: 3,
+        trendBias: 4,
+        minClamp: 38,
+        maxClamp: 98,
+      );
+    }
+
+    if (normalized.contains('klang')) {
+      return const _DemoProfile(
+        base: 82,
+        waveA: 15,
+        waveB: 10,
+        weeklySwing: 5,
+        trendBias: 7,
+        minClamp: 54,
+        maxClamp: 132,
+      );
+    }
+
+    if (normalized.contains('johor')) {
+      return const _DemoProfile(
+        base: 66,
+        waveA: 11,
+        waveB: 7,
+        weeklySwing: 4,
+        trendBias: 5,
+        minClamp: 42,
+        maxClamp: 104,
+      );
+    }
+
+    if (normalized.contains('kuching') || normalized.contains('miri')) {
+      return const _DemoProfile(
+        base: 52,
+        waveA: 9,
+        waveB: 6,
+        weeklySwing: 3,
+        trendBias: 3,
+        minClamp: 34,
+        maxClamp: 88,
+      );
+    }
+
+    return const _DemoProfile(
+      base: 68,
+      waveA: 12,
+      waveB: 8,
+      weeklySwing: 4,
+      trendBias: 5,
+      minClamp: 40,
+      maxClamp: 110,
     );
+  }
 
-    if (index == -1) return null;
-
-    return index + 1;
+  int _locationSeed(String location) {
+    return location.codeUnits.fold<int>(0, (sum, item) => sum + item) % 17;
   }
 
   List<WeeklyBarItem> _buildWeeklyBars(List<_TrendRow> rows) {
@@ -175,7 +224,8 @@ class TrendsHistoryService {
     }
 
     return chunks.map((chunk) {
-      final avg = chunk.map((e) => e.aqi).reduce((a, b) => a + b) / chunk.length;
+      final avg =
+          chunk.map((e) => e.aqi).reduce((a, b) => a + b) / chunk.length;
       final start = chunk.first.date;
       final end = chunk.last.date;
 
@@ -231,12 +281,12 @@ class TrendsHistoryService {
         .where((entry) => entry.value > 0)
         .map(
           (entry) => DistributionItem(
-        label: entry.key,
-        count: entry.value,
-        percentage: ((entry.value / total) * 100).round(),
-        color: colors[entry.key]!,
-      ),
-    )
+            label: entry.key,
+            count: entry.value,
+            percentage: ((entry.value / total) * 100).round(),
+            color: colors[entry.key]!,
+          ),
+        )
         .toList();
   }
 
@@ -246,31 +296,34 @@ class TrendsHistoryService {
     required int unhealthyDays,
     required _TrendRow highestRow,
     required _TrendRow lowestRow,
+    required String location,
   }) {
     final first = rows.first.aqi;
     final last = rows.last.aqi;
     final delta = last - first;
 
     final trendText = delta > 8
-        ? 'Air quality is trending worse over this period.'
+        ? 'Air quality is trending worse across the selected period.'
         : delta < -8
-        ? 'Air quality is trending better over this period.'
-        : 'Air quality remained relatively stable over this period.';
+            ? 'Air quality is trending better across the selected period.'
+            : 'Air quality remained relatively stable across the selected period.';
 
     final unhealthyPct = ((unhealthyDays / rows.length) * 100).round();
 
     return [
-      const InsightItem(
+      InsightItem(
         title: 'Daily Pattern',
-        body: 'Trend is calculated from one daily batch grouped by created_at date.',
-        borderColor: Color(0xFF3B82F6),
-        backgroundColor: Color(0xFFEFF6FF),
-        titleColor: Color(0xFF1E40AF),
-        bodyColor: Color(0xFF1D4ED8),
+        body:
+            'This demo trend simulates realistic AQI variation for $location across the selected range.',
+        borderColor: const Color(0xFF3B82F6),
+        backgroundColor: const Color(0xFFEFF6FF),
+        titleColor: const Color(0xFF1E40AF),
+        bodyColor: const Color(0xFF1D4ED8),
       ),
       InsightItem(
         title: 'Weekly Pattern',
-        body: 'Average AQI for this selected range is ${average.toStringAsFixed(0)}. $trendText',
+        body:
+            'Average AQI for this selected range is ${average.toStringAsFixed(0)}. $trendText',
         borderColor: const Color(0xFF22C55E),
         backgroundColor: const Color(0xFFF0FDF4),
         titleColor: const Color(0xFF166534),
@@ -278,7 +331,8 @@ class TrendsHistoryService {
       ),
       InsightItem(
         title: 'Highest Risk Day',
-        body: 'Worst day was ${_formatLongDate(highestRow.date)} with AQI ${highestRow.aqi.toStringAsFixed(0)}.',
+        body:
+            'Highest AQI appears on ${_formatLongDate(highestRow.date)} at ${highestRow.aqi.toStringAsFixed(0)}.',
         borderColor: const Color(0xFFF97316),
         backgroundColor: const Color(0xFFFFF7ED),
         titleColor: const Color(0xFF9A3412),
@@ -286,7 +340,8 @@ class TrendsHistoryService {
       ),
       InsightItem(
         title: 'Long-term Planning',
-        body: '$unhealthyPct% of selected days were above AQI 100. Best day was ${_formatLongDate(lowestRow.date)}.',
+        body:
+            '$unhealthyPct% of selected days are above AQI 100. Best air quality appears on ${_formatLongDate(lowestRow.date)}.',
         borderColor: const Color(0xFFA855F7),
         backgroundColor: const Color(0xFFFAF5FF),
         titleColor: const Color(0xFF6B21A8),
@@ -295,15 +350,20 @@ class TrendsHistoryService {
     ];
   }
 
-  String _dateOnlyKey(DateTime dt) {
-    final local = DateTime(dt.year, dt.month, dt.day);
-    return local.toIso8601String().split('T').first;
-  }
-
   String _formatShortDate(DateTime date) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${date.day} ${months[date.month - 1]}';
   }
@@ -314,8 +374,18 @@ class TrendsHistoryService {
 
   String _formatLongDate(DateTime date) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
@@ -328,5 +398,25 @@ class _TrendRow {
   const _TrendRow({
     required this.date,
     required this.aqi,
+  });
+}
+
+class _DemoProfile {
+  final double base;
+  final double waveA;
+  final double waveB;
+  final double weeklySwing;
+  final double trendBias;
+  final double minClamp;
+  final double maxClamp;
+
+  const _DemoProfile({
+    required this.base,
+    required this.waveA,
+    required this.waveB,
+    required this.weeklySwing,
+    required this.trendBias,
+    required this.minClamp,
+    required this.maxClamp,
   });
 }
