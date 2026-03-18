@@ -25,6 +25,8 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   final AirQualityService _airQualityService = AirQualityService();
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _heroSectionKey = GlobalKey();
 
   late String selectedLocation;
   late DashboardViewData data;
@@ -48,6 +50,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _loadAirQualityData();
   }
 
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   DashboardViewData _emptyDashboardData(String location) {
     return DashboardViewData(
       cityName: location,
@@ -65,43 +73,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
         PollutantItem(
           name: 'PM2.5',
           unit: 'µg/m³',
-          description:
-              'Very fine dust that can go deep into the lungs. Lower is better.',
+          description: 'Fine particles that can penetrate deep into lungs',
           icon: Icons.water_drop_outlined,
         ),
         PollutantItem(
           name: 'PM10',
           unit: 'µg/m³',
-          description:
-              'Larger dust and smoke particles that may irritate airways. Lower is better.',
+          description: 'Inhalable particles from dust and smoke',
           icon: Icons.air,
         ),
         PollutantItem(
           name: 'O₃',
           unit: 'ppb',
-          description:
-              'Ground-level ozone may irritate breathing, especially outdoors. Lower is better.',
+          description: 'Ground-level ozone, harmful to respiratory system',
           icon: Icons.show_chart,
         ),
         PollutantItem(
           name: 'NO₂',
           unit: 'ppb',
-          description:
-              'Traffic-related gas that may irritate the lungs. Lower is better.',
+          description: 'Nitrogen dioxide from vehicle emissions',
           icon: Icons.warning_amber_outlined,
         ),
         PollutantItem(
           name: 'SO₂',
           unit: 'ppb',
-          description:
-              'Industrial gas that may trigger breathing discomfort. Lower is better.',
+          description: 'Sulfur dioxide from industrial sources',
           icon: Icons.speed,
         ),
         PollutantItem(
           name: 'CO',
           unit: 'ppm',
-          description:
-              'Gas that can reduce oxygen carried in the body. Lower is better.',
+          description: 'Carbon monoxide, can reduce oxygen delivery',
           icon: Icons.error_outline,
         ),
       ],
@@ -135,6 +137,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  void _scrollToHeroSection() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final context = _heroSectionKey.currentContext;
+      if (context != null) {
+        Scrollable.ensureVisible(
+          context,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeOutCubic,
+          alignment: 0,
+        );
+      }
+    });
+  }
+
   Future<void> _updateSelectedLocation(String? value) async {
     if (value == null || value == selectedLocation) return;
 
@@ -143,7 +159,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       data = _emptyDashboardData(selectedLocation);
     });
 
+    _scrollToHeroSection();
     await _loadAirQualityData();
+    _scrollToHeroSection();
   }
 
   void _handleBottomNav(BuildContext context, int index) {
@@ -188,12 +206,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
             child: SingleChildScrollView(
+              controller: _scrollController,
               padding: const EdgeInsets.only(bottom: 120),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const DashboardTopBrandBar(),
-                  DashboardHeroSection(data: data),
+                  Container(
+                    key: _heroSectionKey,
+                    child: DashboardHeroSection(data: data),
+                  ),
                   Center(
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 1280),
